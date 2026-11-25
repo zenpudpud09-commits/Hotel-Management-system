@@ -1,0 +1,567 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hospital Management System</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+:root{--navy:#152b4d;--blue:#24558b;--bg:#f4f6fa;--border:#e3e8ef;--text:#253349}
+body{background:var(--bg);color:var(--text)}
+button{border:none;border-radius:7px;padding:10px 13px;cursor:pointer;font-weight:600}
+button:hover{opacity:.85}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;background:white;color:var(--text)}
+.sidebar{position:fixed;top:0;bottom:0;left:0;width:245px;background:var(--navy);color:white;padding:20px 15px;overflow-y:auto}
+.logo{padding:15px 10px 25px;font-size:22px;font-weight:bold;line-height:1.4}
+.logo small{display:block;color:#b6c8df;font-size:12px;font-weight:normal}
+.nav{display:flex;flex-direction:column;gap:5px}
+.nav button{background:transparent;color:#dce6f5;text-align:left;padding:14px;font-size:14px}
+.nav button.active,.nav button:hover{background:#29466e;color:white}
+.main{margin-left:245px;padding:25px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;gap:12px}
+.header h1{font-size:25px}
+.header small{color:#75839a}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.stat{padding:20px;background:white;border-radius:12px;box-shadow:0 2px 8px #00000008}
+.stat small{color:#718096}
+.stat h2{font-size:30px;margin-top:12px}
+.stat .icon{font-size:24px}
+.panel{background:white;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px #00000008}
+.panelhead{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:17px}
+.panelhead h2{font-size:18px}
+.primary{background:var(--blue);color:white}
+.success{background:#15803d;color:white}
+.danger{background:#fee2e2;color:#991b1b}
+.neutral{background:#edf2f7;color:#334155}
+.purple{background:#6d45bd;color:white}
+.pink{background:#e7477c;color:white}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:650px}
+th,td{padding:13px 12px;text-align:left;border-bottom:1px solid #edf0f4;font-size:13px}
+th{background:#f8fafc;color:#718096}
+.badge{display:inline-block;padding:5px 9px;border-radius:30px;font-size:11px;font-weight:bold}
+.Available,.Completed,.Paid{background:#dcfce7;color:#166534}
+.Occupied,.Cancelled{background:#fee2e2;color:#991b1b}
+.Pending,.Reserved,.Scheduled{background:#fef3c7;color:#92400e}
+.Confirmed,.In-progress{background:#dbeafe;color:#1d4ed8}
+.Unpaid{background:#fee2e2;color:#991b1b}
+.action{padding:7px 9px;font-size:12px;margin:2px}
+.formgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.field{display:flex;flex-direction:column;gap:7px}
+.field label{font-size:13px;font-weight:bold;color:#526078}
+.full{grid-column:1/-1}
+.hidden{display:none!important}
+.empty{text-align:center;color:#94a3b8;padding:25px}
+.search{max-width:300px}
+#toast{display:none;position:fixed;bottom:20px;right:20px;background:var(--navy);color:white;padding:14px 20px;border-radius:8px;z-index:1000}
+.welcome{background:linear-gradient(135deg,#152b4d,#346ba4);color:white;padding:28px;border-radius:12px;margin-bottom:20px}
+.welcome h2{font-size:23px;margin-bottom:8px}
+.welcome p{color:#dce6f5}
+.quick{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.quick button{padding:13px 18px}
+@media(max-width:950px){
+ .sidebar{width:190px}
+ .main{margin-left:190px}
+ .stats{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+ .sidebar{position:relative;width:100%;height:auto}
+ .logo{padding:10px;margin-bottom:10px}
+ .nav{display:grid;grid-template-columns:repeat(2,1fr)}
+ .nav button{padding:10px;font-size:13px}
+ .main{margin:0;padding:15px}
+ .stats{grid-template-columns:repeat(2,1fr)}
+ .formgrid{grid-template-columns:1fr}
+ .full{grid-column:auto}
+ .header h1{font-size:20px}
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+ <div class="logo">
+  Hospital Management System
+  <small>Manage hospital operations</small>
+ </div>
+ <nav class="nav">
+  <button class="active" onclick="showPage('dashboard',this)">⌂ Dashboard</button>
+  <button onclick="showPage('patients',this)">♙ Patients</button>
+  <button onclick="showPage('doctors',this)">♧ Doctors</button>
+  <button onclick="showPage('appointments',this)">▦ Appointments</button>
+  <button onclick="showPage('billing',this)">▤ Billing</button>
+  <button onclick="showPage('rooms',this)">▣ Rooms</button>
+  <button onclick="showPage('reports',this)">▥ Reports</button>
+ </nav>
+</aside>
+
+<main class="main">
+ <header class="header">
+  <div>
+   <h1 id="pageTitle">Dashboard</h1>
+   <small>Hospital Management System</small>
+  </div>
+  <strong id="today"></strong>
+ </header>
+
+ <!-- DASHBOARD -->
+ <section class="page" id="dashboard">
+  <div class="welcome">
+   <h2>Welcome to Hospital Management System</h2>
+   <p>Manage patients, doctors, appointments, rooms and billing in one place.</p>
+   <div class="quick">
+    <button class="primary" onclick="openPatientForm()">+ Add Patient</button>
+    <button class="success" onclick="openDoctorForm()">+ Add Doctor</button>
+    <button class="purple" onclick="openAppointmentForm()">+ New Appointment</button>
+   </div>
+  </div>
+
+  <div class="stats">
+   <div class="stat"><small>Total Patients</small><h2 id="statPatients">0</h2><div class="icon">♙</div></div>
+   <div class="stat"><small>Total Doctors</small><h2 id="statDoctors">0</h2><div class="icon">♧</div></div>
+   <div class="stat"><small>Appointments</small><h2 id="statAppointments">0</h2><div class="icon">▦</div></div>
+   <div class="stat"><small>Available Rooms</small><h2 id="statRooms">0</h2><div class="icon">▣</div></div>
+  </div>
+
+  <div class="panel">
+   <div class="panelhead"><h2>Recent Appointments</h2><button class="neutral" onclick="showPage('appointments')">View All</button></div>
+   <div class="tablewrap"><table>
+    <thead><tr><th>ID</th><th>Patient</th><th>Doctor</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+    <tbody id="recentAppointments"></tbody>
+   </table></div>
+  </div>
+
+  <div class="panel">
+   <div class="panelhead"><h2>Room Overview</h2><button class="neutral" onclick="showPage('rooms')">View Rooms</button></div>
+   <div class="tablewrap"><table>
+    <thead><tr><th>Room</th><th>Type</th><th>Price</th><th>Status</th></tr></thead>
+    <tbody id="dashboardRoomTable"></tbody>
+   </table></div>
+  </div>
+ </section>
+
+ <!-- PATIENTS -->
+ <section class="page hidden" id="patients">
+  <div class="panel">
+   <div class="panelhead">
+    <h2>Patient Records</h2>
+    <input class="search" id="patientSearch" placeholder="Search patient..." oninput="renderPatients()">
+    <button class="primary" onclick="openPatientForm()">+ Add Patient</button>
+   </div>
+   <div class="tablewrap"><table>
+    <thead><tr><th>ID</th><th>Full Name</th><th>Age</th><th>Gender</th><th>Contact</th><th>Actions</th></tr></thead>
+    <tbody id="patientTable"></tbody>
+   </table></div>
+  </div>
+  <div class="panel hidden" id="patientFormPanel">
+   <h2 id="patientFormTitle">Add Patient</h2><br>
+   <form id="patientForm" class="formgrid">
+    <div class="field"><label>Full Name</label><input id="pName" required></div>
+    <div class="field"><label>Age</label><input id="pAge" type="number" min="0" required></div>
+    <div class="field"><label>Gender</label><select id="pGender" required><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+    <div class="field"><label>Contact Number</label><input id="pContact" required></div>
+    <div class="field"><label>Email</label><input id="pEmail" type="email"></div>
+    <div class="field"><label>Address</label><input id="pAddress"></div>
+    <div class="full"><button class="primary" type="submit">Save Patient</button> <button class="neutral" type="button" onclick="closePatientForm()">Cancel</button></div>
+   </form>
+  </div>
+ </section>
+
+ <!-- DOCTORS -->
+ <section class="page hidden" id="doctors">
+  <div class="panel">
+   <div class="panelhead">
+    <h2>Doctor Records</h2>
+    <input class="search" id="doctorSearch" placeholder="Search doctor..." oninput="renderDoctors()">
+    <button class="primary" onclick="openDoctorForm()">+ Add Doctor</button>
+   </div>
+   <div class="tablewrap"><table>
+    <thead><tr><th>ID</th><th>Doctor Name</th><th>Specialization</th><th>Contact</th><th>Schedule</th><th>Actions</th></tr></thead>
+    <tbody id="doctorTable"></tbody>
+   </table></div>
+  </div>
+  <div class="panel hidden" id="doctorFormPanel">
+   <h2 id="doctorFormTitle">Add Doctor</h2><br>
+   <form id="doctorForm" class="formgrid">
+    <div class="field"><label>Doctor Name</label><input id="dName" required></div>
+    <div class="field"><label>Specialization</label><input id="dSpec" placeholder="e.g. Pediatrics" required></div>
+    <div class="field"><label>Contact</label><input id="dContact" required></div>
+    <div class="field"><label>Email</label><input id="dEmail" type="email"></div>
+    <div class="field"><label>Schedule</label><input id="dSchedule" placeholder="e.g. Monday-Friday, 8 AM-4 PM"></div>
+    <div class="full"><button class="primary" type="submit">Save Doctor</button> <button class="neutral" type="button" onclick="closeDoctorForm()">Cancel</button></div>
+   </form>
+  </div>
+ </section>
+
+ <!-- APPOINTMENTS -->
+ <section class="page hidden" id="appointments">
+  <div class="panel">
+   <div class="panelhead">
+    <h2>Appointment Management</h2>
+    <input class="search" id="appointmentSearch" placeholder="Search appointment..." oninput="renderAppointments()">
+    <button class="primary" onclick="openAppointmentForm()">+ New Appointment</button>
+   </div>
+   <div class="tablewrap"><table>
+    <thead><tr><th>ID</th><th>Patient</th><th>Doctor</th><th>Date</th><th>Time</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="appointmentTable"></tbody>
+   </table></div>
+  </div>
+  <div class="panel hidden" id="appointmentFormPanel">
+   <h2>New Appointment</h2><br>
+   <form id="appointmentForm" class="formgrid">
+    <div class="field full"><label>Patient</label><select id="aPatient" required></select></div>
+    <div class="field full"><label>Doctor</label><select id="aDoctor" required></select></div>
+    <div class="field"><label>Date</label><input id="aDate" type="date" required></div>
+    <div class="field"><label>Time</label><input id="aTime" type="time" required></div>
+    <div class="field full"><label>Reason</label><input id="aReason" placeholder="Appointment reason"></div>
+    <div class="full"><button class="primary" type="submit">Save Appointment</button> <button class="neutral" type="button" onclick="closeAppointmentForm()">Cancel</button></div>
+   </form>
+  </div>
+ </section>
+
+ <!-- BILLING -->
+ <section class="page hidden" id="billing">
+  <div class="panel">
+   <div class="panelhead">
+    <h2>Billing Records</h2>
+    <button class="primary" onclick="openBillForm()">+ Create Bill</button>
+   </div>
+   <div class="tablewrap"><table>
+    <thead><tr><th>Bill ID</th><th>Patient</th><th>Description</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="billTable"></tbody>
+   </table></div>
+  </div>
+  <div class="panel hidden" id="billFormPanel">
+   <h2>Create Bill</h2><br>
+   <form id="billForm" class="formgrid">
+    <div class="field full"><label>Patient</label><select id="bPatient" required></select></div>
+    <div class="field full"><label>Description</label><input id="bDesc" required></div>
+    <div class="field"><label>Total Amount</label><input id="bAmount" type="number" min="0" step="0.01" required></div>
+    <div class="field"><label>Initial Payment</label><input id="bPaid" type="number" min="0" step="0.01" value="0" required></div>
+    <div class="full"><button class="primary" type="submit">Save Bill</button> <button class="neutral" type="button" onclick="closeBillForm()">Cancel</button></div>
+   </form>
+  </div>
+ </section>
+
+ <!-- ROOMS -->
+ <section class="page hidden" id="rooms">
+  <div class="panel">
+   <div class="panelhead"><h2>Room Management</h2><button class="primary" onclick="openRoomForm()">+ Add Room</button></div>
+   <div class="tablewrap"><table>
+    <thead><tr><th>Room No.</th><th>Type</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="roomTable"></tbody>
+   </table></div>
+  </div>
+  <div class="panel hidden" id="roomFormPanel">
+   <h2 id="roomFormTitle">Add Room</h2><br>
+   <form id="roomForm" class="formgrid">
+    <div class="field"><label>Room Number</label><input id="rNumber" required></div>
+    <div class="field"><label>Room Type</label><select id="rType"><option>Private</option><option>Ward</option><option>ICU</option><option>Emergency</option><option>Operating Room</option><option>Other</option></select></div>
+    <div class="field"><label>Price</label><input id="rPrice" type="number" min="0" value="0"></div>
+    <div class="field"><label>Status</label><select id="rStatus"><option>Available</option><option>Maintenance</option></select></div>
+    <div class="full"><button class="primary" type="submit">Save Room</button> <button class="neutral" type="button" onclick="closeRoomForm()">Cancel</button></div>
+   </form>
+  </div>
+ </section>
+
+ <!-- REPORTS -->
+ <section class="page hidden" id="reports">
+  <div class="stats">
+   <div class="stat"><small>Total Patients</small><h2 id="repPatients">0</h2></div>
+   <div class="stat"><small>Total Doctors</small><h2 id="repDoctors">0</h2></div>
+   <div class="stat"><small>Total Appointments</small><h2 id="repAppointments">0</h2></div>
+   <div class="stat"><small>Total Billing</small><h2 id="repBilling">₱0.00</h2></div>
+  </div>
+  <div class="panel">
+   <div class="panelhead"><h2>Billing Summary</h2></div>
+   <div class="stats">
+    <div class="stat"><small>Total Charges</small><h2 id="repCharges">₱0</h2></div>
+    <div class="stat"><small>Total Paid</small><h2 id="repPaid">₱0</h2></div>
+    <div class="stat"><small>Total Balance</small><h2 id="repBalance">₱0</h2></div>
+    <div class="stat"><small>Available Rooms</small><h2 id="repRooms">0</h2></div>
+   </div>
+   <button class="primary" onclick="window.print()">Print Reports</button>
+  </div>
+ </section>
+
+</main>
+<div id="toast"></div>
+
+<script>
+const KEY="hospital_management_system_demo";
+let data=JSON.parse(localStorage.getItem(KEY)||"null");
+
+if(!data){
+ data={
+  patients:[],
+  doctors:[],
+  appointments:[],
+  bills:[],
+  rooms:[
+   {id:1,number:"101",type:"Private",price:2500,status:"Available"},
+   {id:2,number:"102",type:"Ward",price:1000,status:"Available"},
+   {id:3,number:"103",type:"Private",price:2500,status:"Available"},
+   {id:4,number:"201",type:"ICU",price:5000,status:"Available"},
+   {id:5,number:"202",type:"Emergency",price:1500,status:"Available"}
+  ]
+ };
+ save();
+}
+
+function save(){
+ localStorage.setItem(KEY,JSON.stringify(data));
+ renderAll();
+}
+function money(n){
+ return "₱"+Number(n||0).toLocaleString("en-PH",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function toast(msg){
+ let t=document.getElementById("toast");
+ t.innerText=msg;t.style.display="block";
+ setTimeout(()=>t.style.display="none",2500);
+}
+function showPage(page,btn){
+ document.querySelectorAll(".page").forEach(p=>p.classList.add("hidden"));
+ document.getElementById(page).classList.remove("hidden");
+ document.getElementById("pageTitle").innerText=page.charAt(0).toUpperCase()+page.slice(1);
+ document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+ if(btn)btn.classList.add("active");
+ else document.querySelectorAll(".nav button").forEach(b=>{
+  if(b.textContent.trim().toLowerCase().includes(page))b.classList.add("active");
+ });
+ renderAll();
+}
+function renderAll(){
+ renderDashboard();renderPatients();renderDoctors();renderAppointments();renderBills();renderRooms();renderReports();
+}
+
+/* DASHBOARD */
+function renderDashboard(){
+ document.getElementById("statPatients").innerText=data.patients.length;
+ document.getElementById("statDoctors").innerText=data.doctors.length;
+ document.getElementById("statAppointments").innerText=data.appointments.length;
+ document.getElementById("statRooms").innerText=data.rooms.filter(r=>r.status==="Available").length;
+
+ let recent=[...data.appointments].reverse().slice(0,5);
+ document.getElementById("recentAppointments").innerHTML=recent.length?recent.map(a=>{
+  let p=data.patients.find(x=>x.id===a.patientId);
+  let d=data.doctors.find(x=>x.id===a.doctorId);
+  return `<tr><td>${a.code}</td><td>${p?p.name:"-"}</td><td>${d?d.name:"-"}</td><td>${a.date}</td><td>${a.time}</td><td><span class="badge ${a.status}">${a.status}</span></td></tr>`;
+ }).join(""):`<tr><td colspan="6" class="empty">No appointments yet</td></tr>`;
+
+ document.getElementById("dashboardRoomTable").innerHTML=data.rooms.map(r=>
+ `<tr><td>${r.number}</td><td>${r.type}</td><td>${money(r.price)}</td><td><span class="badge ${r.status}">${r.status}</span></td></tr>`
+ ).join("");
+}
+
+/* PATIENTS */
+function renderPatients(){
+ let q=(document.getElementById("patientSearch")?.value||"").toLowerCase();
+ let list=data.patients.filter(p=>p.name.toLowerCase().includes(q)||String(p.contact).includes(q));
+ document.getElementById("patientTable").innerHTML=list.length?list.map(p=>
+ `<tr><td>P-${p.id}</td><td>${p.name}</td><td>${p.age}</td><td>${p.gender}</td><td>${p.contact}</td><td><button class="action danger" onclick="deletePatient(${p.id})">Delete</button></td></tr>`
+ ).join(""):`<tr><td colspan="6" class="empty">No patients found</td></tr>`;
+}
+function openPatientForm(){
+ document.getElementById("patientFormPanel").classList.remove("hidden");
+ document.getElementById("patientForm").reset();
+}
+function closePatientForm(){document.getElementById("patientFormPanel").classList.add("hidden")}
+document.getElementById("patientForm").addEventListener("submit",e=>{
+ e.preventDefault();
+ data.patients.push({
+ id:Date.now(),name:document.getElementById("pName").value.trim(),
+ age:Number(document.getElementById("pAge").value),
+ gender:document.getElementById("pGender").value,
+ contact:document.getElementById("pContact").value.trim(),
+ email:document.getElementById("pEmail").value.trim(),
+ address:document.getElementById("pAddress").value.trim()
+ });
+ closePatientForm();save();toast("Patient saved");
+});
+function deletePatient(id){
+ if(data.appointments.some(a=>a.patientId===id)||data.bills.some(b=>b.patientId===id)){
+ toast("Patient has linked records");return;
+ }
+ if(confirm("Delete this patient?")){
+ data.patients=data.patients.filter(p=>p.id!==id);save();toast("Patient deleted");
+ }
+}
+
+/* DOCTORS */
+function renderDoctors(){
+ let q=(document.getElementById("doctorSearch")?.value||"").toLowerCase();
+ let list=data.doctors.filter(d=>d.name.toLowerCase().includes(q)||d.specialization.toLowerCase().includes(q));
+ document.getElementById("doctorTable").innerHTML=list.length?list.map(d=>
+ `<tr><td>D-${d.id}</td><td>${d.name}</td><td>${d.specialization}</td><td>${d.contact}</td><td>${d.schedule||"-"}</td><td><button class="action danger" onclick="deleteDoctor(${d.id})">Delete</button></td></tr>`
+ ).join(""):`<tr><td colspan="6" class="empty">No doctors found</td></tr>`;
+}
+function openDoctorForm(){document.getElementById("doctorFormPanel").classList.remove("hidden");document.getElementById("doctorForm").reset()}
+function closeDoctorForm(){document.getElementById("doctorFormPanel").classList.add("hidden")}
+document.getElementById("doctorForm").addEventListener("submit",e=>{
+ e.preventDefault();
+ data.doctors.push({id:Date.now(),name:document.getElementById("dName").value.trim(),
+ specialization:document.getElementById("dSpec").value.trim(),
+ contact:document.getElementById("dContact").value.trim(),
+ email:document.getElementById("dEmail").value.trim(),
+ schedule:document.getElementById("dSchedule").value.trim()});
+ closeDoctorForm();save();toast("Doctor saved");
+});
+function deleteDoctor(id){
+ if(data.appointments.some(a=>a.doctorId===id)){toast("Doctor has linked appointments");return}
+ if(confirm("Delete this doctor?")){
+ data.doctors=data.doctors.filter(d=>d.id!==id);save();toast("Doctor deleted");
+ }
+}
+
+/* APPOINTMENTS */
+function renderAppointments(){
+ let q=(document.getElementById("appointmentSearch")?.value||"").toLowerCase();
+ let list=[...data.appointments].reverse().filter(a=>{
+  let p=data.patients.find(x=>x.id===a.patientId);
+  let d=data.doctors.find(x=>x.id===a.doctorId);
+  return (p?.name||"").toLowerCase().includes(q)||(d?.name||"").toLowerCase().includes(q)||a.code.toLowerCase().includes(q);
+ });
+ document.getElementById("appointmentTable").innerHTML=list.length?list.map(a=>{
+  let p=data.patients.find(x=>x.id===a.patientId);
+  let d=data.doctors.find(x=>x.id===a.doctorId);
+  return `<tr><td>${a.code}</td><td>${p?p.name:"-"}</td><td>${d?d.name:"-"}</td><td>${a.date}</td><td>${a.time}</td><td>${a.reason||"-"}</td><td><span class="badge ${a.status}">${a.status}</span></td><td>
+  ${a.status==="Scheduled"?`<button class="action success" onclick="updateAppointment(${a.id},'Completed')">Complete</button><button class="action danger" onclick="updateAppointment(${a.id},'Cancelled')">Cancel</button>`:""}
+  </td></tr>`;
+ }).join(""):`<tr><td colspan="8" class="empty">No appointments found</td></tr>`;
+}
+function openAppointmentForm(){
+ if(!data.patients.length){toast("Register a patient first");showPage("patients");return}
+ if(!data.doctors.length){toast("Register a doctor first");showPage("doctors");return}
+ document.getElementById("appointmentFormPanel").classList.remove("hidden");
+ document.getElementById("appointmentForm").reset();
+ document.getElementById("aPatient").innerHTML=data.patients.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+ document.getElementById("aDoctor").innerHTML=data.doctors.map(d=>`<option value="${d.id}">${d.name} - ${d.specialization}</option>`).join("");
+}
+function closeAppointmentForm(){document.getElementById("appointmentFormPanel").classList.add("hidden")}
+document.getElementById("appointmentForm").addEventListener("submit",e=>{
+ e.preventDefault();
+ let date=document.getElementById("aDate").value;
+ let time=document.getElementById("aTime").value;
+ let doctorId=Number(document.getElementById("aDoctor").value);
+ if(data.appointments.some(a=>a.doctorId===doctorId&&a.date===date&&a.time===time&&a.status==="Scheduled")){
+ toast("Doctor already has an appointment at this time");return;
+ }
+ data.appointments.push({id:Date.now(),code:"AP-"+Date.now().toString().slice(-6),
+ patientId:Number(document.getElementById("aPatient").value),
+ doctorId,date,time,reason:document.getElementById("aReason").value.trim(),status:"Scheduled"});
+ closeAppointmentForm();save();toast("Appointment scheduled");
+});
+function updateAppointment(id,status){
+ let a=data.appointments.find(x=>x.id===id);
+ if(a){a.status=status;save();toast("Appointment updated")}
+}
+
+/* BILLING */
+function renderBills(){
+ document.getElementById("billTable").innerHTML=data.bills.length?[...data.bills].reverse().map(b=>{
+ let p=data.patients.find(x=>x.id===b.patientId);
+ let balance=b.amount-b.paid;
+ let status=balance<=0?"Paid":b.paid>0?"Pending":"Unpaid";
+ return `<tr><td>${b.code}</td><td>${p?p.name:"-"}</td><td>${b.description}</td><td>${money(b.amount)}</td><td>${money(b.paid)}</td><td>${money(balance)}</td><td><span class="badge ${status}">${status}</span></td><td>
+ ${balance>0?`<button class="action success" onclick="addPayment(${b.id})">Add Payment</button>`:""}
+ <button class="action danger" onclick="deleteBill(${b.id})">Delete</button>
+ </td></tr>`;
+ }).join(""):`<tr><td colspan="8" class="empty">No billing records</td></tr>`;
+}
+function openBillForm(){
+ if(!data.patients.length){toast("Register a patient first");showPage("patients");return}
+ document.getElementById("billFormPanel").classList.remove("hidden");
+ document.getElementById("billForm").reset();
+ document.getElementById("bPatient").innerHTML=data.patients.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+}
+function closeBillForm(){document.getElementById("billFormPanel").classList.add("hidden")}
+document.getElementById("billForm").addEventListener("submit",e=>{
+ e.preventDefault();
+ let amount=Number(document.getElementById("bAmount").value);
+ let paid=Number(document.getElementById("bPaid").value);
+ if(paid>amount){toast("Payment cannot exceed the bill amount");return}
+ data.bills.push({id:Date.now(),code:"BL-"+Date.now().toString().slice(-6),
+ patientId:Number(document.getElementById("bPatient").value),
+ description:document.getElementById("bDesc").value.trim(),amount,paid});
+ closeBillForm();save();toast("Bill created");
+});
+function addPayment(id){
+ let b=data.bills.find(x=>x.id===id);
+ if(!b)return;
+ let balance=b.amount-b.paid;
+ let amount=Number(prompt("Remaining balance: "+money(balance)+"\nEnter payment amount:"));
+ if(!amount||amount<=0)return;
+ if(amount>balance){toast("Payment exceeds remaining balance");return}
+ b.paid+=amount;save();toast("Payment recorded");
+}
+function deleteBill(id){
+ if(confirm("Delete this billing record?")){
+ data.bills=data.bills.filter(b=>b.id!==id);save();toast("Bill deleted");
+ }
+}
+
+/* ROOMS */
+function renderRooms(){
+ document.getElementById("roomTable").innerHTML=data.rooms.length?data.rooms.map(r=>
+ `<tr><td>${r.number}</td><td>${r.type}</td><td>${money(r.price)}</td><td><span class="badge ${r.status}">${r.status}</span></td><td>
+ <button class="action" onclick="editRoom(${r.id})">Edit</button><button class="action danger" onclick="deleteRoom(${r.id})">Delete</button>
+ </td></tr>`
+ ).join(""):`<tr><td colspan="5" class="empty">No rooms registered</td></tr>`;
+}
+function openRoomForm(){
+ document.getElementById("roomFormPanel").classList.remove("hidden");
+ document.getElementById("roomForm").reset();
+ document.getElementById("roomForm").dataset.edit="";
+ document.getElementById("roomFormTitle").innerText="Add Room";
+}
+function closeRoomForm(){document.getElementById("roomFormPanel").classList.add("hidden")}
+function editRoom(id){
+ let r=data.rooms.find(x=>x.id===id);
+ if(r.status==="Occupied"){toast("Occupied rooms cannot be edited");return}
+ document.getElementById("roomFormPanel").classList.remove("hidden");
+ document.getElementById("roomFormTitle").innerText="Edit Room";
+ document.getElementById("roomForm").dataset.edit=id;
+ document.getElementById("rNumber").value=r.number;
+ document.getElementById("rType").value=r.type;
+ document.getElementById("rPrice").value=r.price;
+ document.getElementById("rStatus").value=r.status==="Maintenance"?"Maintenance":"Available";
+}
+document.getElementById("roomForm").addEventListener("submit",e=>{
+ e.preventDefault();
+ let edit=document.getElementById("roomForm").dataset.edit;
+ let number=document.getElementById("rNumber").value.trim();
+ if(data.rooms.some(r=>r.number===number&&r.id!=edit)){toast("Room number already exists");return}
+ let obj={number,type:document.getElementById("rType").value,price:Number(document.getElementById("rPrice").value),status:document.getElementById("rStatus").value};
+ if(edit)Object.assign(data.rooms.find(r=>r.id==edit),obj);
+ else data.rooms.push({...obj,id:Date.now()});
+ closeRoomForm();save();toast("Room saved");
+});
+function deleteRoom(id){
+ let r=data.rooms.find(x=>x.id===id);
+ if(r.status==="Occupied"){toast("Occupied rooms cannot be deleted");return}
+ if(confirm("Delete this room?")){
+ data.rooms=data.rooms.filter(x=>x.id!==id);save();toast("Room deleted");
+ }
+}
+
+/* REPORTS */
+function renderReports(){
+ let total=data.bills.reduce((s,b)=>s+b.amount,0);
+ let paid=data.bills.reduce((s,b)=>s+b.paid,0);
+ document.getElementById("repPatients").innerText=data.patients.length;
+ document.getElementById("repDoctors").innerText=data.doctors.length;
+ document.getElementById("repAppointments").innerText=data.appointments.length;
+ document.getElementById("repBilling").innerText=money(total);
+ document.getElementById("repCharges").innerText=money(total);
+ document.getElementById("repPaid").innerText=money(paid);
+ document.getElementById("repBalance").innerText=money(total-paid);
+ document.getElementById("repRooms").innerText=data.rooms.filter(r=>r.status==="Available").length;
+}
+
+document.getElementById("today").innerText=new Date().toLocaleDateString("en-PH",{year:"numeric",month:"short",day:"numeric"});
+renderAll();
+</script>
+</body>
+</html>
